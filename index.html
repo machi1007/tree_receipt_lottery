@@ -2,402 +2,248 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>大樹點數銀行經濟數據系統</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>真・封神發票抽獎系統</title>
+
 <style>
 body{
-  font-family:"Microsoft JhengHei";
-  background:#eef3f8;
   margin:0;
-}
-.header{
-  background:#2c3e50;
+  font-family:"Microsoft JhengHei";
+  background:black;
   color:white;
   text-align:center;
-  padding:20px;
-  font-size:30px;
 }
-.container{
-  width:1100px;
-  margin:auto;
-  margin-top:25px;
-  background:white;
-  padding:30px;
+
+textarea{
+  width:90%;
+  height:140px;
+}
+
+button{
+  padding:12px 25px;
+  font-size:18px;
+  margin:10px;
+  border:none;
   border-radius:10px;
-  box-shadow:0 0 10px rgba(0,0,0,0.1);
+  background:gold;
+  cursor:pointer;
 }
-.dashboard{
-  display:flex;
-  gap:20px;
-  margin-bottom:30px;
-  flex-wrap:wrap;
-}
+
 .card{
-  flex:1;
-  background:#f7f9fc;
-  padding:20px;
-  border-radius:8px;
-  text-align:center;
-  min-width:150px;
-}
-.cardTitle{
-  font-size:18px;
-}
-.cardValue{
-  font-size:28px;
-  color:#e74c3c;
-  margin-top:10px;
-}
-.section{
-  margin-top:40px;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-}
-th,td{
-  border:1px solid #ccc;
-  padding:10px;
-  text-align:center;
-}
-th{
-  background:#ecf0f1;
-}
-.value{
-  color:#2980b9;
-  font-weight:bold;
-}
-.notice{
-  margin-top:25px;
-  background:#fff7d6;
+  background:rgba(255,255,255,0.1);
+  margin:10px auto;
   padding:15px;
-  border-radius:8px;
-  font-size:18px;
+  width:420px;
+  border-radius:15px;
 }
-canvas{
-  margin-top:20px;
+
+.win{ color:gold; }
+
+#countdown{
+  font-size:60px;
 }
 </style>
 </head>
+
 <body>
 
-<div class="header">
-🏦 大樹點數銀行經濟數據公告板
+<!-- 📜 說明 -->
+<div style="max-width:800px;margin:20px auto;background:#111;padding:20px;border-radius:15px;text-align:left;">
+<a href="index.html" style="background:#e74c3c;color:white;padding:8px 12px;border-radius:5px;text-decoration:none;margin-left:10px;">🏠 回到經濟數據公告</a>
+<h2>📜 抽獎規則</h2>
+特別獎：1000萬點｜特獎：200萬點｜頭獎：20萬點<br>
+貳獎：4萬｜參獎：1萬｜肆獎：4000｜伍獎：1000｜六獎：200<br><br>
+📌 無人中獎時會觸發回饋：<br>
+- 全班+100點 / 隨機3人+100點 / 加碼六獎 / 或無補償 😈
 </div>
 
-<div class="container">
+<h1>🎲 真・封神抽獎 🎲</h1>
 
-<div class="notice">
-📢 <b>大樹點數銀行公告</b>
-<p>溫馨存款活動：<b>活存1.5%/2週、定存5%/月</b></p>
-<b>【當前經濟狀況】</b>：
-<b id="announcement"></b>
-</div>
+<textarea id="data" placeholder="貼上資料"></textarea><br>
 
-<h4><a href="index2.html" target="_blank">📖 查看經濟筆記</a></h4>
-<h4><a href="index3.html" target="_blank">📊 專用計算系統</a></h4>
-<h4><a href="https://machi1007.github.io/tree_receipt_lottery/" target="_blank">📜 發票抽獎系統</a></h4>
-<h2>📢 經濟數據公告</h2>
+<button onclick="parseData()">載入資料</button>
+<button onclick="start()">開始開獎</button>
 
-<div class="dashboard">
-  <div class="card">
-    <div class="cardTitle">通貨膨脹指數</div>
-    <div class="cardValue" id="inflation"></div>
-  </div>
-  <div class="card">
-    <div class="cardTitle">本週建議薪資</div>
-    <div class="cardValue" id="salary"></div>
-  </div>
-  <div class="card">
-    <div class="cardTitle">消費者物價指數(CPI)</div>
-    <div class="cardValue" id="cpi"></div>
-  </div>
-  <div class="card">
-    <div class="cardTitle">貨幣供給量</div>
-    <div class="cardValue" id="money"></div>
-  </div>
-  <div class="card">
-    <div class="cardTitle">GDP</div>
-    <div class="cardValue" id="gdp"></div>
-  </div>
-  <div class="card">
-    <div class="cardTitle">GDP成長率</div>
-    <div class="cardValue" id="gdpGrowth"></div>
-  </div>
-  <div class="card">
-    <div class="cardTitle">股票結算價格</div>
-    <div class="cardValue" id="stockp"></div>
-  </div>
-</div>
-
-<div class="section">
-<h2>📈 當前銀行利率</h2>
-<table>
-<tr><th>項目</th><th>利率</th></tr>
-<tr><td>活存利率</td><td id="savingRate"></td></tr>
-<tr><td>定存利率</td><td id="fixedRate"></td></tr>
-</table>
-</div>
-
-<div class="section">
-<h2>💰 薪資獎金參照表</h2>
-<table id="salaryTable">
-<tr>
-<th>項目</th><th>基準薪資</th><th>建議薪資</th><th>說明</th>
-</tr>
-</table>
-</div>
-
-<div class="section">
-<h2>📊 股價結算歷史折線圖</h2>
-<canvas id="stockpChart"></canvas>
-</div>
-
-<div class="section">
-<h2>📊 通膨指數歷史折線圖</h2>
-<canvas id="inflationChart"></canvas>
-</div>
-
-<div class="section">
-<h2>📊 建議薪資歷史折線圖</h2>
-<canvas id="salaryChart"></canvas>
-</div>
-
-<div class="section">
-<h2>📊 消費物價歷史折線圖</h2>
-<canvas id="cpiChart"></canvas>
-</div>
-
-<div class="section">
-<h2>📊 貨幣供給歷史折線圖</h2>
-<canvas id="moneyChart"></canvas>
-</div>
-
-<div class="section">
-<h2>📊 GDP歷史折線圖</h2>
-<canvas id="gdpChart"></canvas>
-</div>
-
-<div class="section">
-<h2>📊 GDP成長率歷史折線圖</h2>
-<canvas id="gdpGrowthChart"></canvas>
-</div>
-
-<div class="section">
-<h2>📜 大樹銀行歷史數據表</h2>
-<table id="historyTable">
-<tr>
-<th>日期</th>
-<th>通膨指數</th>
-<th>建議週薪</th>
-<th>CPI (%)</th>
-<th>貨幣供給量</th>
-<th>GDP</th>
-<th>GDP成長率(%)</th>
-<th>股票結算價</th>
-</tr>
-</table>
-</div>
-
-</div>
+<div id="countdown"></div>
+<div id="result"></div>
+<div id="rank"></div>
 
 <script>
 
-/* ======================
-老師修改區
-====================== */
-let baseAsset = 500
-let currentAsset = 562.97
-let students = 28
+let students=[];
 
-let baseSalary = 30
-let adjustRatio = 0.8
+function parseData(){
+  students=[];
+  let raw=document.getElementById("data").value.split("\n");
 
-let savingRate = 1.5
-let fixedRate = 5
+  raw.forEach(line=>{
+    let p=line.split("\t");
+    if(p.length>=7){
+      let name=p[5];
+      let num=p[6].replace(/[A-Z]/g,"");
+      students.push({name,invoice:num,win:0});
+    }
+  });
 
-let basePrice = 100
-let currentPrice = 200
-
-let stockp = 15.2
-
-let salaryData = [
-{name:"每週薪資",base:30,note:"擔任職位認真負責"},
-{name:"每週加碼獎金A",base:15,note:"擔任職務卓越表現III"},
-{name:"每週加碼獎金B",base:10,note:"擔任職務卓越表現II"},
-{name:"每週加碼獎金C",base:5,note:"擔任職務卓越表現I"},
-{name:"每週職位獎金",base:10,note:"職位加碼獎金"},
-]
-
-let historyData=[
-{date:"2026-02-23",inflation:1.0,salary:0,cpi:0.0,money:5600,stockp:10},
-{date:"2026-02-26",inflation:1.0,salary:10,cpi:0.0,money:11200,stockp:10.4},
-{date:"2026-03-05",inflation:1.1,salary:10,cpi:30.0,money:12500,stockp:9.7},
-{date:"2026-03-06",inflation:1.2,salary:10,cpi:40.0,money:14000,stockp:10.2},
-{date:"2026-03-09",inflation:1.04,salary:10,cpi:20.0,money:14560,gdp:5796,gdpGrowth:1.0,stockp:11.1},
-{date:"2026-03-10",inflation:1.10,salary:10,cpi:20.0,money:15400,gdp:6118,gdpGrowth:6.6,stockp:11.4},
-{date:"2026-03-11",inflation:1.06,salary:10,cpi:50.0,money:14840,gdp:5894,gdpGrowth:2.7,stockp:12.3},
-{date:"2026-03-12",inflation:1.04,salary:10,cpi:55.0,money:14560,gdp:5796,gdpGrowth:1.0,stockp:13.5},
-{date:"2026-03-13",inflation:1.4,salary:15,cpi:114.3,money:15400,stockp:14.4},
-{date:"2026-03-16",inflation:1.2,salary:30,cpi:100.0,money:16800,stockp:15.7},
-{date:"2026-03-17",inflation:1.13,salary:27,cpi:100.0,money:15763.16,gdp:6273,gdpGrowth:9.3,stockp:15.2}
-]
-
-/* ======================
-經濟計算
-====================== */
-let inflation=currentAsset/baseAsset
-let newSalary=Math.round(baseSalary*inflation*adjustRatio)
-let money=currentAsset*students
-let cpi=((currentPrice-basePrice)/basePrice)*100
-
-let gdp = newSalary*students + money*0.35
-let baseGDP = baseSalary*students + baseAsset*students*0.35  // 修正基準GDP包含貨幣
-let gdpGrowth = (gdp - baseGDP)/baseGDP
-
-document.getElementById("inflation").innerText=inflation.toFixed(2)
-document.getElementById("salary").innerText=newSalary+" 點"
-document.getElementById("money").innerText=money+" 點"
-document.getElementById("cpi").innerText=cpi.toFixed(1)+"%"
-document.getElementById("gdp").innerText=Math.round(gdp)
-document.getElementById("gdpGrowth").innerText=(gdpGrowth*100).toFixed(1)+"%"
-document.getElementById("savingRate").innerText=savingRate+"% / 每兩週"
-document.getElementById("fixedRate").innerText=fixedRate+"% / 每月"
-document.getElementById("stockp").innerText = stockp + " 點";
-
-/* ======================
-薪資表
-====================== */
-let table=document.getElementById("salaryTable")
-salaryData.forEach(item=>{
-  let value=Math.round(item.base*inflation*adjustRatio)
-  table.innerHTML+=`
-  <tr>
-    <td>${item.name}</td>
-    <td>${item.base}</td>
-    <td class="value">${value}</td>
-    <td>${item.note}</td>
-  </tr>
-  `
-})
-
-/* ======================
-技術分析
-====================== */
-function movingAverage(data,period){
-let result=[]
-for(let i=0;i<data.length;i++){
-if(i<period-1){
-result.push(null)
-}else{
-let sum=0
-for(let j=0;j<period;j++){
-sum+=data[i-j]
-}
-result.push((sum/period).toFixed(2))
-}
-}
-return result
+  alert("載入 "+students.length+" 筆資料");
 }
 
-/* ======================
-歷史表
-====================== */
-let historyTable=document.getElementById("historyTable")
-let baseGDPForHistory = baseSalary*students + baseAsset*students*0.35
-
-historyData.forEach(h=>{
-  let hGDP = Math.round(h.salary*students + h.money*0.35)
-  let hGDPGrowth = ((hGDP - baseGDPForHistory)/baseGDPForHistory*100).toFixed(1)
-
-  historyTable.innerHTML+=`
-  <tr>
-    <td>${h.date}</td>
-    <td>${h.inflation}</td>
-    <td>${h.salary}</td>
-    <td>${h.cpi}</td>
-    <td>${h.money}</td>
-    <td>${hGDP}</td>
-    <td>${hGDPGrowth}</td>
-    <td>${h.stockp}</td>
-  </tr>
-  `
-})
-
-/* ======================
-折線圖
-====================== */
-let labels=historyData.map(h=>h.date)
-let inflationHistory=historyData.map(h=>h.inflation)
-let salaryHistory=historyData.map(h=>h.salary)
-let cpiHistory=historyData.map(h=>h.cpi)
-let moneyHistory=historyData.map(h=>h.money)
-let stockpHistory=historyData.map(h=>h.stockp)
-let gdpHistory = historyData.map(h => Math.round(h.salary*students + h.money*0.35))
-let gdpGrowthHistory = gdpHistory.map(v => ((v - baseGDPForHistory)/baseGDPForHistory*100).toFixed(1))
-
-let ma5=movingAverage(stockpHistory,5)
-let ma10=movingAverage(stockpHistory,10)
-
-new Chart(document.getElementById("inflationChart"),{
-type:"line",
-data:{labels:labels,datasets:[{label:"通膨指數",data:inflationHistory,fill:false}]}
-})
-
-new Chart(document.getElementById("salaryChart"),{
-type:"line",
-data:{labels:labels,datasets:[{label:"建議薪資",data:salaryHistory,fill:false}]}
-})
-
-new Chart(document.getElementById("cpiChart"),{
-type:"line",
-data:{labels:labels,datasets:[{label:"CPI指數",data:cpiHistory,fill:false}]}
-})
-
-new Chart(document.getElementById("moneyChart"),{
-type:"line",
-data:{labels:labels,datasets:[{label:"貨幣供給量",data:moneyHistory,fill:false}]}
-})
-
-new Chart(document.getElementById("stockpChart"),{
-type:"line",
-data:{
-labels:labels,
-datasets:[
-{label:"股價",data:stockpHistory,fill:false},
-{label:"MA5",data:ma5,fill:false},
-{label:"MA10",data:ma10,fill:false}
-]
+function random8(){
+  return Math.floor(Math.random()*90000000+10000000).toString();
 }
-})
 
-new Chart(document.getElementById("gdpChart"),{
-type:"line",
-data:{labels:labels,datasets:[{label:"GDP",data:gdpHistory,fill:false}]}
-})
-
-new Chart(document.getElementById("gdpGrowthChart"),{
-type:"line",
-data:{labels:labels,datasets:[{label:"GDP成長率 (%)",data:gdpGrowthHistory,fill:false}]}
-})
-
-/* ======================
-公告
-====================== */
-let text=""
-if(inflation<1){
-text="📉 經濟緊縮：市場貨幣減少"
-}else if(inflation<1.5){
-text="📊 經濟穩定"
-}else if(inflation<2){
-text="📈 通貨膨脹：薪資已調整"
-}else{
-text="🔥 超級通膨：市場資金過多"
+function random3(){
+  return Math.floor(Math.random()*900+100).toString();
 }
-document.getElementById("announcement").innerText=text
+
+function countdown(cb){
+  let n=3;
+  let el=document.getElementById("countdown");
+
+  let t=setInterval(()=>{
+    el.innerText=n;
+    n--;
+    if(n<0){
+      clearInterval(t);
+      el.innerText="";
+      cb();
+    }
+  },1000);
+}
+
+function check(num,f,a,s,g){
+
+  if(num===s) return 10000000;
+  if(num===g) return 2000000;
+
+  for(let x of f){
+    if(num===x) return 200000;
+    if(num.slice(1)===x.slice(1)) return 40000;
+    if(num.slice(2)===x.slice(2)) return 10000;
+    if(num.slice(3)===x.slice(3)) return 4000;
+    if(num.slice(4)===x.slice(4)) return 1000;
+    if(num.slice(5)===x.slice(5)) return 200;
+  }
+
+  for(let x of a){
+    if(num.slice(5)===x) return 200;
+  }
+
+  return 0;
+}
+
+function start(){
+
+  document.getElementById("result").innerHTML="";
+  document.getElementById("rank").innerHTML="";
+
+  countdown(()=>{
+
+    let s=random8();
+    let g=random8();
+    let f=[random8(),random8(),random8()];
+    let a=[random3(),random3()];
+
+    let winners=0;
+
+    let html=`<div class="card">
+    🎯 開獎結果<br>
+    特別獎：${s}<br>
+    特獎：${g}<br>
+    頭獎：${f.join(" / ")}<br>
+    增開六獎：${a.join(" / ")}
+    </div>`;
+
+    students.forEach(st=>{
+      let p=check(st.invoice,f,a,s,g);
+      st.win=p;
+      if(p>0){
+        winners++;
+        html+=`<div class="card win">
+        🎉 ${st.name} 中 ${p} 點！（${st.invoice}）
+        </div>`;
+      }
+    });
+
+    // 🎁 回饋系統
+    if(winners===0){
+
+      let event=Math.floor(Math.random()*4);
+
+      if(event===0){
+        html+=`<div class="card">😭 無人中獎，全班 +100點</div>`;
+        students.forEach(st=> st.win +=100);
+      }
+      else if(event===1){
+        html+=`<div class="card">🎁 安慰獎：隨機3人 +100點</div>`;
+        let pool=[...students];
+        for(let i=0;i<3 && pool.length>0;i++){
+          let index=Math.floor(Math.random()*pool.length);
+          let r=pool.splice(index,1)[0];
+          html+=`<div class="card win">${r.name} +100點</div>`;
+          r.win += 100;
+        }
+      }
+      else if(event===2){
+        let extra=random3();
+        html+=`<div class="card">🎲 加碼六獎：${extra}</div>`;
+
+        let got=false;
+
+        students.forEach(st=>{
+          if(st.invoice.slice(5)===extra){
+            html+=`<div class="card win">${st.name} 中200點（加碼六獎）</div>`;
+            st.win += 200;
+            got=true;
+          }
+        });
+
+        if(!got){
+          html+=`<div class="card">😢 加碼六獎無人中獎</div>`;
+        }
+      }
+      else{
+        html+=`<div class="card">😈 今天運氣不好…</div>`;
+      }
+
+    }else{
+      html+=`<div class="card win">🏆 恭喜中獎者！</div>`;
+    }
+
+    document.getElementById("result").innerHTML=html;
+
+    // 🏆 累加排行榜（同一人多張發票累加）
+    let totalMap={};
+
+    students.forEach(s=>{
+      if(!totalMap[s.name]){
+        totalMap[s.name]={score:0,count:0};
+      }
+      if(s.win>0){
+        totalMap[s.name].score+=s.win;
+        totalMap[s.name].count++;
+      }
+    });
+
+    let sorted=Object.entries(totalMap)
+      .map(([name,data])=>({name,...data}))
+      .sort((a,b)=>b.score-a.score);
+
+    let rank="<div class='card'><h3>🏆 排行榜（總點數）</h3>";
+
+    sorted.forEach((s,i)=>{
+      if(s.score>0){
+        rank+=`${i+1}. ${s.name} - ${s.score}點（中${s.count}張）<br>`;
+      }
+    });
+
+    rank+="</div>";
+
+    document.getElementById("rank").innerHTML=rank;
+
+  });
+}
 
 </script>
+
 </body>
 </html>
-```
