@@ -2,248 +2,215 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>真・封神發票抽獎系統</title>
-
+<title>真・封神發票抽獎系統 V2.0</title>
 <style>
-body{
-  margin:0;
-  font-family:"Microsoft JhengHei";
-  background:black;
-  color:white;
-  text-align:center;
-}
-
-textarea{
-  width:90%;
-  height:140px;
-}
-
-button{
-  padding:12px 25px;
-  font-size:18px;
-  margin:10px;
-  border:none;
-  border-radius:10px;
-  background:gold;
-  cursor:pointer;
-}
-
-.card{
-  background:rgba(255,255,255,0.1);
-  margin:10px auto;
-  padding:15px;
-  width:420px;
-  border-radius:15px;
-}
-
-.win{ color:gold; }
-
-#countdown{
-  font-size:60px;
-}
+    body { margin:0; font-family:"Microsoft JhengHei"; background:#0f0f0f; color:#e0e0e0; text-align:center; line-height: 1.6; }
+    h1 { color: gold; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+    textarea { width:90%; height:120px; background:#222; color:#fff; border:1px solid #444; border-radius:8px; padding:10px; font-size:12px; }
+    .btn-group { margin: 20px; }
+    button { padding:10px 25px; font-size:16px; margin:5px; border:none; border-radius:5px; background:linear-gradient(135deg, #ffd700, #ffa500); color:#000; font-weight:bold; cursor:pointer; transition: 0.3s; }
+    button:hover { transform: scale(1.05); filter: brightness(1.1); }
+    button:disabled { background: #555; cursor: not-allowed; }
+    .status-bar { color: #888; font-size: 14px; margin-bottom: 10px; }
+    .card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); margin:10px auto; padding:15px; width:90%; max-width:500px; border-radius:12px; }
+    .win { border-color: gold; box-shadow: 0 0 15px rgba(255,215,0,0.2); }
+    .win-title { color: gold; font-weight: bold; font-size: 1.2em; }
+    #countdown { font-size:80px; font-weight: bold; color: gold; height: 100px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid #333; padding: 10px; text-align: center; }
+    th { color: gold; }
+    .highlight { color: #ff4d4d; font-weight: bold; }
 </style>
 </head>
-
 <body>
 
-<!-- 📜 說明 -->
-<div style="max-width:800px;margin:20px auto;background:#111;padding:20px;border-radius:15px;text-align:left;">
-<a href="https://machi1007.github.io/Treebank_Announcement/" style="background:#e74c3c;color:white;padding:8px 12px;border-radius:5px;text-decoration:none;margin-left:10px;">🏠 回到經濟數據公告</a>
-<h2>📜 抽獎規則</h2>
-特別獎：1000萬點｜特獎：200萬點｜頭獎：20萬點<br>
-貳獎：4萬｜參獎：1萬｜肆獎：4000｜伍獎：1000｜六獎：200<br><br>
-📌 無人中獎時會觸發回饋：<br>
-- 全班+100點 / 隨機3人+100點 / 加碼六獎 / 或無補償 😈
+<div style="max-width:800px;margin:20px auto;background:#1a1a1a;padding:20px;border-radius:15px;text-align:left; border-left: 5px solid gold;">
+    <h2>📜 抽獎規則說明</h2>
+    <small>特別獎(8碼同): 1000萬 | 特獎(8碼同): 200萬 | 頭獎(8碼同): 20萬<br>
+    貳獎:末7碼 | 參獎:末6碼 | 肆獎:末5碼 | 伍獎:末4碼 | 六獎:末3碼 (200點)</small>
 </div>
 
-<h1>🎲 真・封神抽獎 🎲</h1>
+<h1>🎲 真・封神抽獎系統 🎲</h1>
+<div id="status" class="status-bar">尚未載入資料</div>
+<textarea id="data" placeholder="請直接貼上原始資料內容..."></textarea>
 
-<textarea id="data" placeholder="貼上資料"></textarea><br>
-
-<button onclick="parseData()">載入資料</button>
-<button onclick="start()">開始開獎</button>
+<div class="btn-group">
+    <button onclick="parseData()">📥 載入資料</button>
+    <button id="startBtn" onclick="start()" disabled>🔥 開始對獎</button>
+</div>
 
 <div id="countdown"></div>
 <div id="result"></div>
 <div id="rank"></div>
 
 <script>
+let students = [];
 
-let students=[];
-
-function parseData(){
-  students=[];
-  let raw=document.getElementById("data").value.split("\n");
-
-  raw.forEach(line=>{
-    let p=line.split("\t");
-    if(p.length>=7){
-      let name=p[5];
-      let num=p[6].replace(/[A-Z]/g,"");
-      students.push({name,invoice:num,win:0});
+function parseData() {
+    students = [];
+    const rawText = document.getElementById("data").value;
+    // 使用正則表達式捕捉：姓名(中文) + 發票號碼(2英+8數)
+    // 根據你的資料，姓名通常在發票號碼前面
+    const regex = /([\u4e00-\u9fa5]{2,10})[\s\t\n]*([A-Z]{2}\d{8})/g;
+    let match;
+    
+    while ((match = regex.exec(rawText)) !== null) {
+        students.push({
+            name: match[1],
+            invoice: match[2].slice(2), // 只留數字部分對獎
+            raw: match[2],
+            win: 0,
+            prizeName: ""
+        });
     }
-  });
 
-  alert("載入 "+students.length+" 筆資料");
-}
-
-function random8(){
-  return Math.floor(Math.random()*90000000+10000000).toString();
-}
-
-function random3(){
-  return Math.floor(Math.random()*900+100).toString();
-}
-
-function countdown(cb){
-  let n=3;
-  let el=document.getElementById("countdown");
-
-  let t=setInterval(()=>{
-    el.innerText=n;
-    n--;
-    if(n<0){
-      clearInterval(t);
-      el.innerText="";
-      cb();
+    if(students.length > 0) {
+        document.getElementById("status").innerHTML = `✅ 成功載入 <b style="color:white">${students.length}</b> 筆發票資料！`;
+        document.getElementById("startBtn").disabled = false;
+    } else {
+        alert("找不到符合格式的發票資料，請檢查輸入內容！");
     }
-  },1000);
 }
 
-function check(num,f,a,s,g){
+function random8() { return Math.floor(Math.random()*90000000+10000000).toString(); }
+function random3() { return Math.floor(Math.random()*900+100).toString(); }
 
-  if(num===s) return 10000000;
-  if(num===g) return 2000000;
+function check(num, f, a, s, g) {
+    if (num === s) return { pts: 10000000, title: "特別獎" };
+    if (num === g) return { pts: 2000000, title: "特獎" };
 
-  for(let x of f){
-    if(num===x) return 200000;
-    if(num.slice(1)===x.slice(1)) return 40000;
-    if(num.slice(2)===x.slice(2)) return 10000;
-    if(num.slice(3)===x.slice(3)) return 4000;
-    if(num.slice(4)===x.slice(4)) return 1000;
-    if(num.slice(5)===x.slice(5)) return 200;
-  }
-
-  for(let x of a){
-    if(num.slice(5)===x) return 200;
-  }
-
-  return 0;
+    for (let x of f) {
+        if (num === x) return { pts: 200000, title: "頭獎" };
+        if (num.slice(-7) === x.slice(-7)) return { pts: 40000, title: "貳獎" };
+        if (num.slice(-6) === x.slice(-6)) return { pts: 10000, title: "參獎" };
+        if (num.slice(-5) === x.slice(-5)) return { pts: 4000, title: "肆獎" };
+        if (num.slice(-4) === x.slice(-4)) return { pts: 1000, title: "伍獎" };
+        if (num.slice(-3) === x.slice(-3)) return { pts: 200, title: "六獎" };
+    }
+    for (let x of a) {
+        if (num.slice(-3) === x) return { pts: 200, title: "增開六獎" };
+    }
+    return { pts: 0, title: "" };
 }
 
-function start(){
+function start() {
+    const btn = document.getElementById("startBtn");
+    btn.disabled = true;
+    document.getElementById("result").innerHTML = "";
+    document.getElementById("rank").innerHTML = "";
+    
+    let n = 3;
+    const cdEl = document.getElementById("countdown");
+    let timer = setInterval(() => {
+        cdEl.innerText = n;
+        n--;
+        if(n < 0) {
+            clearInterval(timer);
+            cdEl.innerText = "";
+            processDrawing();
+            btn.disabled = false;
+        }
+    }, 800);
+}
 
-  document.getElementById("result").innerHTML="";
-  document.getElementById("rank").innerHTML="";
+function processDrawing() {
+    const s = random8(), g = random8();
+    const f = [random8(), random8(), random8()];
+    const a = [random3(), random3()];
 
-  countdown(()=>{
-
-    let s=random8();
-    let g=random8();
-    let f=[random8(),random8(),random8()];
-    let a=[random3(),random3()];
-
-    let winners=0;
-
-    let html=`<div class="card">
-    🎯 開獎結果<br>
-    特別獎：${s}<br>
-    特獎：${g}<br>
-    頭獎：${f.join(" / ")}<br>
-    增開六獎：${a.join(" / ")}
+    let winnersCount = 0;
+    let html = `<div class="card">
+        <b style="font-size:1.2em">🎯 本期開獎號碼</b><br>
+        特別獎：<span class="highlight">${s}</span><br>
+        特獎：<span class="highlight">${g}</span><br>
+        頭獎：${f.join(" / ")}<br>
+        增開六獎：${a.join(" / ")}
     </div>`;
 
-    students.forEach(st=>{
-      let p=check(st.invoice,f,a,s,g);
-      st.win=p;
-      if(p>0){
-        winners++;
-        html+=`<div class="card win">
-        🎉 ${st.name} 中 ${p} 點！（${st.invoice}）
-        </div>`;
-      }
+    // 進行對獎
+    students.forEach(st => {
+        let res = check(st.invoice, f, a, s, g);
+        st.win = res.pts;
+        st.prizeName = res.title;
+        if(st.win > 0) {
+            winnersCount++;
+            html += `<div class="card win">
+                🎉 <span class="win-title">${st.name}</span> 
+                獲得 <span class="highlight">${st.win}</span> 點！<br>
+                <small>${st.prizeName} (${st.raw})</small>
+            </div>`;
+        }
     });
 
-    // 🎁 回饋系統
-    if(winners===0){
+    // 🎁 無人中獎的回饋系統 (優化處：同一人不重複安慰)
+    if(winnersCount === 0) {
+        let event = Math.floor(Math.random() * 4);
+        // 先取得不重複的名字名單
+        let uniqueNames = [...new Set(students.map(s => s.name))];
 
-      let event=Math.floor(Math.random()*4);
-
-      if(event===0){
-        html+=`<div class="card">😭 無人中獎，全班 +100點</div>`;
-        students.forEach(st=> st.win +=100);
-      }
-      else if(event===1){
-        html+=`<div class="card">🎁 安慰獎：隨機3人 +100點</div>`;
-        let pool=[...students];
-        for(let i=0;i<3 && pool.length>0;i++){
-          let index=Math.floor(Math.random()*pool.length);
-          let r=pool.splice(index,1)[0];
-          html+=`<div class="card win">${r.name} +100點</div>`;
-          r.win += 100;
+        if(event === 0) {
+            html += `<div class="card">😭 慘爆！無人中獎。安慰獎：全班+100點</div>`;
+            students.forEach(st => st.win = 100);
         }
-      }
-      else if(event===2){
-        let extra=random3();
-        html+=`<div class="card">🎲 加碼六獎：${extra}</div>`;
-
-        let got=false;
-
-        students.forEach(st=>{
-          if(st.invoice.slice(5)===extra){
-            html+=`<div class="card win">${st.name} 中200點（加碼六獎）</div>`;
-            st.win += 200;
-            got=true;
-          }
-        });
-
-        if(!got){
-          html+=`<div class="card">😢 加碼六獎無人中獎</div>`;
+        else if(event === 1) {
+            html += `<div class="card">🎁 安慰獎：隨機抽出 3 位名額 (+100點)</div>`;
+            // 從不重複名單中抽，確保人頭不重複
+            let pool = [...uniqueNames];
+            for(let i=0; i<3 && pool.length>0; i++){
+                let idx = Math.floor(Math.random()*pool.length);
+                let luckyName = pool.splice(idx, 1)[0];
+                html += `<div class="card win">👤 ${luckyName} 獲得安慰獎 100點</div>`;
+                // 標記該學生所有發票中有一張得100點 (避免排行榜計算錯誤)
+                let target = students.find(s => s.name === luckyName);
+                if(target) target.win = 100;
+            }
         }
-      }
-      else{
-        html+=`<div class="card">😈 今天運氣不好…</div>`;
-      }
-
-    }else{
-      html+=`<div class="card win">🏆 恭喜中獎者！</div>`;
+        else {
+            html += `<div class="card">😈 今天大家都沒帶運氣出門...</div>`;
+        }
     }
 
-    document.getElementById("result").innerHTML=html;
+    document.getElementById("result").innerHTML = html;
 
-    // 🏆 累加排行榜（同一人多張發票累加）
-    let totalMap={};
-
-    students.forEach(s=>{
-      if(!totalMap[s.name]){
-        totalMap[s.name]={score:0,count:0};
-      }
-      if(s.win>0){
-        totalMap[s.name].score+=s.win;
-        totalMap[s.name].count++;
-      }
-    });
-
-    let sorted=Object.entries(totalMap)
-      .map(([name,data])=>({name,...data}))
-      .sort((a,b)=>b.score-a.score);
-
-    let rank="<div class='card'><h3>🏆 排行榜（總點數）</h3>";
-
-    sorted.forEach((s,i)=>{
-      if(s.score>0){
-        rank+=`${i+1}. ${s.name} - ${s.score}點（中${s.count}張）<br>`;
-      }
-    });
-
-    rank+="</div>";
-
-    document.getElementById("rank").innerHTML=rank;
-
-  });
+    // 🏆 表格化排行榜
+    renderRank();
 }
 
-</script>
+function renderRank() {
+    let totalMap = {};
+    students.forEach(s => {
+        if(!totalMap[s.name]) totalMap[s.name] = { score: 0, count: 0 };
+        if(s.win > 0) {
+            totalMap[s.name].score += s.win;
+            totalMap[s.name].count++;
+        }
+    });
 
+    let sorted = Object.entries(totalMap)
+        .map(([name, data]) => ({ name, ...data }))
+        .filter(s => s.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+    if(sorted.length > 0) {
+        let rankHtml = `<div class="card">
+            <h3>🏆 幸運排行榜</h3>
+            <table>
+                <thead>
+                    <tr><th>排名</th><th>姓名</th><th>總點數</th><th>中獎張數</th></tr>
+                </thead>
+                <tbody>`;
+        sorted.forEach((s, i) => {
+            rankHtml += `<tr>
+                <td>${i+1}</td>
+                <td><b>${s.name}</b></td>
+                <td class="highlight">${s.score}</td>
+                <td>${s.count} 張</td>
+            </tr>`;
+        });
+        rankHtml += `</tbody></table></div>`;
+        document.getElementById("rank").innerHTML = rankHtml;
+    }
+}
+</script>
 </body>
 </html>
